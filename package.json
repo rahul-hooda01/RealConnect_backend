@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A B2B portal for real estate agents to connect and manage properties.",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
