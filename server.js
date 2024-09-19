@@ -17,6 +17,8 @@ const app = express();
 
 // Middleware
 app.use(cors());
+// Middleware to parse URL-encoded bodies
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Routes
