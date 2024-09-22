@@ -3,13 +3,11 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema({
-    userName:{
+    fullName:{
         type:String,
         required:true,
-        unique:true,
         lowercase:true,
         trim:true,
-        index:true,
     },
     email:{
         type:String,
@@ -17,19 +15,28 @@ const userSchema = new mongoose.Schema({
         unique:true,
         lowercase:true,
         trim:true,
-    },
-    fullName:{
-        type:String,
-        required:true,
-        lowercase:true,
-        trim:true,
+        index:true,
     },
     avatar:{
         type:String,  //will use cloudinary
     },
-    mobileNumber: { type: String, required: true }, // Used for WhatsApp
-    subscriptionTier: { type: String, enum: ['Basic', 'Pro', 'Premium'], default: 'Basic' },
-    properties: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Property' }], // Reference to properties listed by the user
+    mobileNumber: { 
+        type: String, 
+        required: true, 
+        unique: true
+    }, // Mobile number for WhatsApp communication
+    companyName: { 
+        type: String, 
+    }, // Company name field
+    subscriptionTier: { 
+        type: String, 
+        enum: ['Basic', 'Pro', 'Premium'], 
+        default: 'Basic' 
+    },
+    properties: [{ 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Property' 
+    }], // Reference to properties listed by the user
     password: {
         type:String,
         required:[true, 'Password is required'],

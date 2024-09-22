@@ -30,19 +30,23 @@ const registerUser = asyncHandler(async(req,res,next)=>{
     // check for images, upload them to cloudinary, if uploaded sucessfully then remove from local;
     // create user object- create entry in db, except "-password -refreshToken" send response to frontend
 
-    const { userName,email, fullName, password, mobileNumber } = req.body;
+    const { fullName, email, password, mobileNumber, companyName } = req.body;
 
-    if ([fullName,email,userName,password, mobileNumber].some((field)=>
-        field?.trim() == ""
-    )){
-        throw new ApiError(400,"all fields are required");
+    // Validate if all required fields are provided
+    if ([fullName, email, password, mobileNumber].some(field => field?.trim() === "")) {
+        throw new ApiError(400, "All fields (FullName, Email, password, mobileNumber) are required");
+    }
+    // Validate phone number (should be exactly 10 digits and numeric)
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(mobileNumber)) {
+        throw new ApiError(400, "Invalid mobile number. It should be a 10-digit number.");
     }
 
-    const existedUser = await User.findOne({ //check db m username or email to nhi h
-        $or: [{ userName }, { email }]  // $or operator use kiya h array m jitni value check krni h krega object k andar alag alag
+    const existedUser = await User.findOne({ //check db m mobileNumber or email to nhi h
+        $or: [{ mobileNumber }, { email }]  // $or operator use kiya h array m jitni value check krni h krega object k andar alag alag
     })
     if (existedUser){
-        throw new ApiError(409, "User with Email already exist");
+        throw new ApiError(409, "User with Email & mobileNumber already exist");
     }
 
     let avatarLocalPath;
@@ -66,12 +70,11 @@ const registerUser = asyncHandler(async(req,res,next)=>{
 
     const user = await User.create({ //user schema se bola k user create kr do
         fullName,
-        userName: userName.toLowerCase(),
-        avatar: avatar?.url || "",
         email,
         mobileNumber,
+        companyName: companyName || "",
+        avatar: avatar?.url || "",
         password
-
     })
 
     //test user created or not
