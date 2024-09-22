@@ -95,14 +95,14 @@ const loginUser = asyncHandler(async(req,res,next)=>{
     // find the user, password check (jwt and hash things), give access token and refresh token in cookies
 
    try {
-    const {email,password, userName}  = req.body;
+    const {email,password, mobileNumber}  = req.body;
  
-    if(!(userName || password)){
-     throw new ApiError(400, "username or password  required")
+    if(!((mobileNumber || email) && password)){
+     throw new ApiError(400, "Email/mobileNumber or password  required")
     }
     // find user with help of username or email
  const user = await User.findOne({ // note:-- ye user jo hmne db se find kiya h iske pass hmare bnaye custom methods bhi h 'User' ye mongoose se h iske pass custom method nhi h
-     $or : [{userName}, {email}]
+     $or : [{mobileNumber}, {email}]
  })
 
  if(!user){
@@ -233,15 +233,16 @@ const getCurrentUser = asyncHandler(async(req,res,next)=>{
 })
 
 const updateAccountDetails = asyncHandler(async(req,res,next)=>{
-    const {email, fullName} = req.body;
-    if (!(email || fullName)){
+    const {email, fullName, mobileNumber} = req.body;
+    if (!(email || fullName || mobileNumber)){
         throw new ApiError(400, "all fields are required");
     }
     const user = await User.findByIdAndUpdate(req.user?._id, //accept 3 parameter
         {
             $set:{
                 fullName,
-                email:email //aise bhi kr skte h
+                email:email, //aise bhi kr skte h
+                mobileNumber
             }
         },
         {new :true} // agar new true h , to updated info return krta h
