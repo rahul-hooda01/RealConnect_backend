@@ -23,6 +23,22 @@ const upploadOnCloudinary = async(localPath)=>{
         return null;
     }
 }
+// Function to upload multiple images accept array contains data of images
+const uploadMultipleImages = async (images) => {
+    // console.log(' inside multiple images;', images)
+    try {
+        const uploadPromises = images.map(async (image) => {
+            return await upploadOnCloudinary(image?.path)
+        })
+        console.log(' calling promisea.all---');
+        const results = await Promise.all(uploadPromises);
+        return results;
+    } catch (error) {
+        console.error('Error uploading images:', error);
+        return null;
+    }
+  };
+
 const deleteFromClodinary = async(fileUrl)=>{
 
     const publicId = fileUrl?.split('/').pop().split('.')[0]; 
@@ -36,4 +52,4 @@ const deleteFromClodinary = async(fileUrl)=>{
     }
 }
 
-export {upploadOnCloudinary, deleteFromClodinary};
+export {upploadOnCloudinary, uploadMultipleImages, deleteFromClodinary};
