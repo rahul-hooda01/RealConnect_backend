@@ -13,6 +13,9 @@ export const createProperty = asyncHandler(async (req, res, next) => {
     if (!(title && description && price && location && propertyType && status )){
         throw new ApiError(400, "all fields are required");
     }
+    if (typeof location !== 'string' || !location.trim()) {
+        throw new ApiError(400, "Location must be a non-empty string.");
+    }
     // Check propertyType enum
     const validPropertyTypes = ['Residential', 'Commercial'];
     if (!validPropertyTypes.includes(propertyType)) {
@@ -31,7 +34,7 @@ export const createProperty = asyncHandler(async (req, res, next) => {
         try {
             //upload on cloudinary;
             const propertyImagesdata = await uploadMultipleImages(propertyImages);
-            propertyImagesdata.map((e) => PropertyImagesArray.push(e?.url));
+            PropertyImagesArray = propertyImagesdata.map(e => e?.url);
         } catch (error) {
             throw new ApiError(400, "property Image is not uploaded on cloudinary ")
         }
@@ -46,60 +49,157 @@ export const createProperty = asyncHandler(async (req, res, next) => {
         price,
         location,
         propertyType,
-        status: status || '',
+        status: status || 'Available', // Default to 'Available'
         propertyImages: PropertyImagesArray || []
     })
     //test property created or not
-    const propertyCreated = await Property.findById(property._id);
-    if (!propertyCreated){
+    // const property = await Property.findById(property._id);
+    if (!property){
         throw new ApiError(500, "something went wrong while registering property")
     }
 
     return res.status(201).json( // data return(res) to frontend
-       new ApiResponse(200, propertyCreated, "property registered successfully")
+       new ApiResponse(200, property, "property registered successfully")
     );
 });
 
 // Get all properties with pagination
-export const getProperties = async (req, res) => {
+export const getProperties = asyncHandler(async (req, res, next) => {
+    // console.log('req.query.page---', req.query.page);
+    // console.log('req.query.limit---', req.query.limit);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     try {
-        const { page = 1, limit = 10 } = req.query;
-        const properties = await Property.aggregatePaginate({}, { page, limit });
-        res.status(200).json(properties);
+        const properties = await Property.find().skip(skip).limit(limit);
+        const totalProperties = await Property.countDocuments();
+
+        return res.status(200).json(
+            new ApiResponse(200, { properties, totalProperties }, "Properties fetched successfully")
+        );
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        throw new ApiError(500, "Error fetching properties");
     }
-};
+});
+
+// get properties of specific user
+export const getPropertiesByUserId = asyncHandler(async (req, res, next) => {
+    const { id } = req.query;
+
+    console.log('id--', id);
+    console.log('req.query--', req.query?.id);
+    console.log('req.params--', req.params);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Validate user ID
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new ApiError(400, "Invalid user ID");
+    }
+
+    try {
+        const properties = await Property.find({ userId: id }).skip(skip).limit(limit);
+        const totalProperties = await Property.countDocuments({ userId: id });
+
+        return res.status(200).json(
+            new ApiResponse(200, { properties, totalProperties }, "Properties fetched successfully for user")
+        );
+    } catch (error) {
+        throw new ApiError(500, "Error fetching properties for user");
+    }
+});
+
 
 // Get a single property by ID
-export const getPropertyById = async (req, res) => {
-    try {
-        const property = await Property.findById(req.params.id);
-        if (!property) return res.status(404).json({ message: "Property not found" });
-        res.status(200).json(property);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+export const getPropertyById = asyncHandler(async (req, res, next) => {
+    const { id } = req.params;
+
+    // Validate property ID
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new ApiError(400, "Invalid property ID");
     }
-};
+
+    try {
+        const property = await Property.findById(id);
+
+        if (!property) {
+            throw new ApiError(404, "Property not found");
+        }
+
+        return res.status(200).json(
+            new ApiResponse(200, property, "Property fetched successfully")
+        );
+    } catch (error) {
+        throw new ApiError(500, "Error fetching property");
+    }
+});
+
 
 // Update a property
-export const updateProperty = async (req, res) => {
-    try {
-        const updatedProperty = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!updatedProperty) return res.status(404).json({ message: "Property not found" });
-        res.status(200).json(updatedProperty);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+export const updateProperty = asyncHandler(async (req, res, next) => {
+    const { id } = req.params;
+    const { title, description, price, location, propertyType, status } = req.body;
+
+    // Validate property ID
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new ApiError(400, "Invalid property ID");
     }
-};
+
+    // Validate fields
+    if (!(title && description && price && location && propertyType && status)) {
+        throw new ApiError(400, "All fields are required");
+    }
+
+    const validPropertyTypes = ['Residential', 'Commercial'];
+    if (!validPropertyTypes.includes(propertyType)) {
+        throw new ApiError(400, `Property type must be one of the following: ${validPropertyTypes.join(', ')}.`);
+    }
+
+    const validStatuses = ['Available', 'Sold', 'Under Contract'];
+    if (!validStatuses.includes(status)) {
+        throw new ApiError(400, `Status must be one of the following: ${validStatuses.join(', ')}.`);
+    }
+
+    try {
+        const property = await Property.findByIdAndUpdate(id, {
+            title, description, price, location, propertyType, status
+        }, { new: true });
+
+        if (!property) {
+            throw new ApiError(404, "Property not found");
+        }
+
+        return res.status(200).json(
+            new ApiResponse(200, property, "Property updated successfully")
+        );
+    } catch (error) {
+        throw new ApiError(500, "Error updating property");
+    }
+});
 
 // Delete a property
-export const deleteProperty = async (req, res) => {
-    try {
-        const deletedProperty = await Property.findByIdAndDelete(req.params.id);
-        if (!deletedProperty) return res.status(404).json({ message: "Property not found" });
-        res.status(200).json({ message: "Property deleted" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+export const deleteProperty = asyncHandler(async (req, res, next) => {
+    const { id } = req.params;
+
+    // Validate property ID
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new ApiError(400, "Invalid property ID");
     }
-};
+
+    try {
+        const property = await Property.findByIdAndDelete(id);
+
+        if (!property) {
+            throw new ApiError(404, "Property not found");
+        }
+
+        return res.status(200).json(
+            new ApiResponse(200, {}, "Property deleted successfully")
+        );
+    } catch (error) {
+        throw new ApiError(500, "Error deleting property");
+    }
+});
+
