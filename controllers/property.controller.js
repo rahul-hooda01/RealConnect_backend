@@ -65,8 +65,6 @@ export const createProperty = asyncHandler(async (req, res, next) => {
 
 // Get all properties with pagination
 export const getProperties = asyncHandler(async (req, res, next) => {
-    // console.log('req.query.page---', req.query.page);
-    // console.log('req.query.limit---', req.query.limit);
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -85,11 +83,7 @@ export const getProperties = asyncHandler(async (req, res, next) => {
 
 // get properties of specific user
 export const getPropertiesByUserId = asyncHandler(async (req, res, next) => {
-    const { id } = req.query;
-
-    console.log('id--', id);
-    console.log('req.query--', req.query?.id);
-    console.log('req.params--', req.params);
+    const id = req.query.id || req.params.id; 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -114,7 +108,7 @@ export const getPropertiesByUserId = asyncHandler(async (req, res, next) => {
 
 // Get a single property by ID
 export const getPropertyById = asyncHandler(async (req, res, next) => {
-    const { id } = req.params;
+    const id = req.query.id || req.params.id; 
 
     // Validate property ID
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -139,14 +133,13 @@ export const getPropertyById = asyncHandler(async (req, res, next) => {
 
 // Update a property
 export const updateProperty = asyncHandler(async (req, res, next) => {
-    const { id } = req.params;
+    const id = req.query.id || req.params.id; 
     const { title, description, price, location, propertyType, status } = req.body;
 
     // Validate property ID
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
         throw new ApiError(400, "Invalid property ID");
     }
-
     // Validate fields
     if (!(title && description && price && location && propertyType && status)) {
         throw new ApiError(400, "All fields are required");
@@ -189,17 +182,26 @@ export const deleteProperty = asyncHandler(async (req, res, next) => {
     }
 
     try {
-        const property = await Property.findByIdAndDelete(id);
-
+        // Find the property and retrieve its images
+        const property = await Property.findById(id);
+        // console.log('property--', property);
         if (!property) {
             throw new ApiError(404, "Property not found");
         }
+
+        // Delete images from Cloudinary
+        const deletePromises = property.propertyImages.map(fileUrl => deleteFromClodinary(fileUrl));
+        await Promise.all(deletePromises); // Wait for all delete operations to complete
+
+        // // Now delete the property from the database
+        await Property.findByIdAndDelete(id);
 
         return res.status(200).json(
             new ApiResponse(200, {}, "Property deleted successfully")
         );
     } catch (error) {
-        throw new ApiError(500, "Error deleting property");
+        console.error(error); // Log the error for debugging
+        throw new ApiError(500, `Error deleting property: ${error}`);
     }
 });
 

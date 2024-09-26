@@ -9,16 +9,16 @@ const router = Router();
 router.route("/addProperty").post(upload.fields([{ name: "propertyImages", maxCount:5 }]), verifyJWT, createProperty);
 
 // Get all properties (pagination included)
-router.route("/getAllProperties").get(getProperties);
+router.route("/getAllProperties").get(verifyJWT, getProperties);
 
 // Get all properties of a particular agent (pagination included)
-router.route("/getAllPropertiesByUserId").get(verifyJWT, getPropertiesByUserId);
+router.route("/getAllPropertiesByUserId/:id").get(verifyJWT, getPropertiesByUserId);
 
 // Get a specific property by ID
-router.route("/getPropertyById/:id").get(getPropertyById);
+router.route("/getPropertyById/:id").get(verifyJWT, getPropertyById);
 
 // Update a property by ID (secured)
-router.route("/updateProperty/:id").put(verifyJWT, updateProperty);
+router.route("/updateProperty/:id").patch(verifyJWT, updateProperty);
 
 // Delete a property by ID (secured)
 router.route("/deleteProperty/:id").delete(verifyJWT, deleteProperty);
