@@ -22,4 +22,4 @@ TODO:
 - [ ]  update userController according to updated user Schema
 - [ ]  brainstorm about user registration which field is necessary
 - [ ]  login with gmail, impliment and think about storing mobile number also
-- [ ]  make property routes and all possible api endpoint(controller)
+- [ ]  make property routes and all possible api endpoint
