@@ -19,7 +19,7 @@ This platform is designed for real estate agents to list their properties, searc
 
 TODO:
 
-- [ ]  update userController according to updated user Schema
+- [ ]  update propertyController according to updated image and aggrigation query Schema
 - [ ]  brainstorm about user registration which field is necessary
 - [ ]  login with gmail, impliment and think about storing mobile number also
 - [ ]  make property routes and all possible api endpoint
