@@ -21,3 +21,5 @@ TODO:
 
 - [ ]  update propertyController according to updated image and aggrigation query Schema
 - [ ]  brainstorm about message and connection controller
+- [ ]  agrigation pipeline mongodb learn
+- [ ]  start working on frontend side
